@@ -1,0 +1,57 @@
+{% extends "Base.html" %}
+
+{% block title %}Chat{% endblock %}
+
+{% block content %}
+    <h2>Чат ID: {{ chat_id }}</h2>
+    <div id="messages" style="border: 1px solid #ccc; padding: 10px; height: 400px; overflow-y: scroll;">
+        <!-- Здесь будут сообщения -->
+    </div>
+    <input type="text" id="messageInput" placeholder="Введите сообщение" />
+    <button id="sendMessageButton">Отправить</button>
+
+    <script>
+        const chatId = "{{ chat_id }}";
+        const senderId = "your_sender_id"; // Замените на актуальный ID участника
+
+        function loadMessages() {
+            fetch(`/messages/${chatId}`)
+                .then(response => response.json())
+                .then(data => {
+                    const messagesDiv = document.getElementById('messages');
+                    messagesDiv.innerHTML = ''; // Очистка текущих сообщений
+                    data.messages.forEach(msg => {
+                        const msgElement = document.createElement('div');
+                        msgElement.textContent = `${msg.timestamp}: ${msg.content} (Отправлено участником ${msg.sender_id})`;
+                        messagesDiv.appendChild(msgElement);
+                    });
+                    messagesDiv.scrollTop = messagesDiv.scrollHeight; // Прокрутка вниз
+                });
+        }
+
+        document.getElementById('sendMessageButton').addEventListener('click', function() {
+            const message = document.getElementById('messageInput').value;
+            fetch(`/send-message/${chatId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ content: message, sender_id: senderId })
+            })
+            .then(response => {
+                if (response.ok) {
+                    document.getElementById('messageInput').value = ''; // Очистка поля ввода
+                    loadMessages(); // Загрузка сообщений после отправки
+                } else {
+                    alert('Ошибка при отправке сообщения');
+                }
+            });
+        });
+
+        // Загрузка сообщений при загрузке страницы
+        loadMessages();
+
+        // Обновление сообщений каждые 2 секунды
+        setInterval(loadMessages, 2000);
+    </script>
+{% endblock %}
